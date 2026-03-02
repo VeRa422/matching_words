@@ -44,13 +44,15 @@
             z-index: 3000; transition: 0.3s;
         }
 
+        /* ИСПРАВЛЕННЫЙ БЛОК ГРОМКОСТИ */
         .volume-ctrl {
-            position: absolute; top: 20px; right: 20px;
-            z-index: 2000; display: flex; align-items: center; gap: 10px;
-            background: rgba(0,0,0,0.8); padding: 12px 20px; border-radius: 30px;
-            border: 2px solid #ffd700; pointer-events: auto;
+            position: fixed; top: 20px; right: 20px;
+            z-index: 5000; display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.85); padding: 12px 20px; border-radius: 30px;
+            border: 2px solid #ffd700;
+            pointer-events: all; /* Важно: разрешаем клики */
         }
-        input[type=range] { cursor: pointer; accent-color: #ffd700; width: 130px; vertical-align: middle; }
+        input[type=range] { cursor: pointer; accent-color: #ffd700; width: 130px; }
 
         .word-tablet {
             position: absolute; width: 180px; padding: 12px;
@@ -59,13 +61,12 @@
             text-align: center; font-size: 24px; z-index: 300;
             box-shadow: 0 10px 20px rgba(0,0,0,0.7);
             display: flex; flex-direction: column; align-items: center;
-            box-sizing: border-box; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-sizing: border-box; transition: transform 0.2s;
         }
 
         .artifact-coin {
             width: 45px; height: 45px; margin-top: 8px;
             background: url('2.png') center/contain no-repeat;
-            filter: drop-shadow(0 0 5px rgba(255,215,0,0.5));
         }
         
         .active-coin {
@@ -115,9 +116,9 @@
 
 <button id="start-btn" onclick="startGame()">BEGIN</button>
 
-<div class="volume-ctrl" onmouseover="this.style.cursor='default'">
+<div class="volume-ctrl">
     <span style="color: #ffd700; font-size: 18px;">🔊</span>
-    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5" oninput="changeVol(this.value)">
+    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5">
 </div>
 
 <div id="scarab-cursor"></div>
@@ -128,7 +129,7 @@
     <div id="ui-container" style="display: none;">
         <div class="ui-top">
             <div class="slots" id="slots-box"></div>
-            <p id="level-counter" style="color:#ffd700; font-size:16px; margin-top:10px; font-weight: bold; text-shadow: 2px 2px 4px #000;">Ancient Magic Coin 1 of 10</p>
+            <p id="level-counter" style="color:#ffd700; font-size:16px; margin-top:10px; font-weight: bold;">Ancient Magic Coin 1 of 10</p>
         </div>
         <div id="words-layer"></div>
     </div>
@@ -147,10 +148,19 @@
     const sndVictory = new Audio('4.mp3');
     const playlist = [sndCorrect, sndWrong, sndLevelComplete, sndVictory];
 
-    // Глобальная функция смены громкости (теперь точно работает)
-    function changeVol(v) {
-        playlist.forEach(s => { s.volume = v; });
+    const volSlider = document.getElementById('vol-slider');
+
+    // Функция проигрывания звука с учетом текущей громкости
+    function playSnd(audioObj) {
+        audioObj.volume = volSlider.value;
+        audioObj.currentTime = 0;
+        audioObj.play();
     }
+
+    // Слушатель для мгновенного обновления громкости
+    volSlider.addEventListener('input', () => {
+        playlist.forEach(s => s.volume = volSlider.value);
+    });
 
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
@@ -173,7 +183,6 @@
         document.getElementById('ui-container').style.display = 'block';
         scarab.style.display = 'block';
         gameStarted = true;
-        changeVol(document.getElementById('vol-slider').value);
         initGame();
     }
 
@@ -206,19 +215,16 @@
             const cellIndex = cellIndices[index];
             const col = cellIndex % cols;
             const row = Math.floor(cellIndex / cols);
-            
-            // "Хаотичность" — случайное смещение и поворот
-            const jitterX = (Math.random() - 0.5) * 70;
-            const jitterY = (Math.random() - 0.5) * 50;
-            const randRot = (Math.random() - 0.5) * 12;
+            const jX = (Math.random() - 0.5) * 70;
+            const jY = (Math.random() - 0.5) * 50;
+            const rR = (Math.random() - 0.5) * 12;
 
             const tab = document.createElement('div');
             tab.className = 'word-tablet';
-            tab.style.left = (marginX + (col * cellW) + (cellW / 2) - 90 + jitterX) + 'px';
-            tab.style.top = (marginY + (row * cellH) + (cellH / 2) - 40 + jitterY) + 'px';
-            tab.style.transform = `rotate(${randRot}deg)`;
-            tab.dataset.baseRot = randRot;
-
+            tab.style.left = (marginX + (col * cellW) + (cellW / 2) - 90 + jX) + 'px';
+            tab.style.top = (marginY + (row * cellH) + (cellH / 2) - 40 + jY) + 'px';
+            tab.style.transform = `rotate(${rR}deg)`;
+            tab.dataset.baseRot = rR;
             tab.innerHTML = `<span>${word}</span><div class="artifact-coin"></div>`;
             layer.appendChild(tab);
 
@@ -251,7 +257,7 @@
 
             if (!coin.collected && dist < 40) {
                 if (coin.targetIndex === nextWordIndex) {
-                    sndCorrect.currentTime = 0; sndCorrect.play();
+                    playSnd(sndCorrect); // Используем функцию с громкостью
                     coin.collected = true; 
                     coin.el.classList.add('active-coin');
                     nextWordIndex++;
@@ -260,7 +266,7 @@
                         setTimeout(() => animateToSlot(coin), 300);
                     }
                 } else if (nextWordIndex > 0) {
-                    sndWrong.currentTime = 0; sndWrong.play();
+                    playSnd(sndWrong); // Используем функцию с громкостью
                     flash.classList.add('shock-anim');
                     setTimeout(() => flash.classList.remove('shock-anim'), 400);
                     nextWordIndex = 0;
@@ -271,7 +277,7 @@
     }
 
     function animateToSlot(lastCoin) {
-        sndLevelComplete.currentTime = 0; sndLevelComplete.play();
+        playSnd(sndLevelComplete);
         const slot = document.getElementById(`slot-${currentSentenceIndex}`);
         const sRect = slot.getBoundingClientRect();
         const cRect = lastCoin.el.getBoundingClientRect();
@@ -293,7 +299,7 @@
             if (currentSentenceIndex < sentences.length) {
                 setTimeout(loadSentence, 500);
             } else { 
-                sndVictory.play(); 
+                playSnd(sndVictory);
                 document.getElementById('victory-modal').style.display = 'block'; 
             }
         }, 1000);
@@ -314,7 +320,6 @@
                 if (!isTransitioning) ctx.lineTo(mouseX, mouseY);
                 ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 6;
                 ctx.shadowBlur = 15; ctx.shadowColor = '#ffd700';
-                ctx.lineCap = 'round';
                 ctx.stroke();
             }
         }
