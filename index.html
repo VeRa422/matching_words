@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Luxor: 10 Artifacts Quest</title>
+    <title>Luxor: 10 Ancient Coins Quest</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Philosopher&display=swap');
 
@@ -54,17 +54,16 @@
             background: rgba(0,0,0,0.6); padding: 10px; border-radius: 20px;
             border: 1px solid #ffd700;
         }
-        input[type=range] {
-            cursor: pointer; accent-color: #ffd700; width: 100px;
-        }
+        input[type=range] { cursor: pointer; accent-color: #ffd700; width: 100px; }
 
         .word-tablet {
-            position: absolute; min-width: 140px; padding: 12px;
+            position: absolute; width: 160px; padding: 12px;
             background: linear-gradient(135deg, #d4af37 0%, #ffd700 50%, #8a6d1c 100%);
             border: 2px solid #fff3ad; border-radius: 6px; color: #1a1403;
             text-align: center; font-size: 24px; z-index: 300;
             box-shadow: 0 10px 20px rgba(0,0,0,0.7);
             display: flex; flex-direction: column; align-items: center;
+            box-sizing: border-box;
         }
 
         .artifact-coin {
@@ -95,7 +94,7 @@
         .slots { display: flex; gap: 8px; justify-content: center; }
         .slot {
             width: 50px; height: 50px; border: 2px solid #ffd700;
-            background: rgba(0,0,0,0.8); border-radius: 8px;
+            background: rgba(0,0,0,0.8); border-radius: 8px; display: flex; align-items: center; justify-content: center;
         }
 
         .modal {
@@ -123,20 +122,20 @@
     <div id="ui-container" style="display: none;">
         <div class="ui-top">
             <div class="slots" id="slots-box"></div>
-            <p id="level-counter" style="color:#ffd700; font-size:14px; margin-top:10px;">Artifact 1 of 10</p>
+            <p id="level-counter" style="color:#ffd700; font-size:14px; margin-top:10px;">Ancient Coin 1 of 10</p>
         </div>
         <div id="words-layer"></div>
     </div>
 
     <div id="victory-modal" class="modal">
         <h1 style="font-family:'Cinzel Decorative';">Legendary!</h1>
-        <p>All 10 artifacts collected!</p>
-        <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer;">Play Again</button>
+        <p>You have collected all 10 Ancient Coins of the Pharaoh!</p>
+        <button onclick="location.reload()" style="padding:15px 30px; cursor:pointer; background:linear-gradient(#ffd700, #b8860b); border:none; font-family:'Cinzel Decorative'; font-weight:bold; border-radius:4px;">Play Again</button>
     </div>
 </div>
 
 <script>
-    // Звуки
+    // Настройка звуков
     const sndCorrect = new Audio('1.mp3');
     const sndWrong = new Audio('2.mp3');
     const sndLevelComplete = new Audio('3.mp3');
@@ -182,18 +181,30 @@
 
     function loadSentence() {
         if (currentSentenceIndex >= sentences.length) return;
-        document.getElementById('level-counter').innerText = `Artifact ${currentSentenceIndex + 1} of 10`;
+        document.getElementById('level-counter').innerText = `Ancient Coin ${currentSentenceIndex + 1} of 10`;
         const layer = document.getElementById('words-layer');
         layer.innerHTML = ''; activeCoins = []; nextWordIndex = 0; isTransitioning = false;
 
         const words = sentences[currentSentenceIndex];
         const shuffled = [...words].sort(() => Math.random() - 0.5);
 
+        const cols = Math.min(shuffled.length, 3); 
+        const rows = Math.ceil(shuffled.length / cols);
+        const cellW = window.innerWidth / (cols + 1);
+        const cellH = (window.innerHeight - 300) / (rows + 1);
+
         shuffled.forEach((word, index) => {
+            const col = index % cols;
+            const row = Math.floor(index / cols);
             const tab = document.createElement('div');
             tab.className = 'word-tablet';
-            tab.style.left = (Math.random() * (window.innerWidth - 200) + 50) + 'px';
-            tab.style.top = (Math.random() * (window.innerHeight - 300) + 200) + 'px';
+            
+            const jitterX = (Math.random() - 0.5) * 20;
+            const jitterY = (Math.random() - 0.5) * 20;
+            
+            tab.style.left = (cellW * (col + 1) - 80 + jitterX) + 'px';
+            tab.style.top = (cellH * (row + 1) + 150 + jitterY) + 'px';
+            
             tab.innerHTML = `<span>${word}</span><div class="artifact-coin"></div>`;
             layer.appendChild(tab);
 
@@ -225,6 +236,7 @@
 
             if (!coin.collected && dist < 40) {
                 if (coin.targetIndex === nextWordIndex) {
+                    // ПРАВИЛЬНЫЙ ВЫБОР - 1.mp3
                     sndCorrect.currentTime = 0; sndCorrect.play();
                     coin.collected = true; coin.el.classList.add('active-coin');
                     nextWordIndex++;
@@ -232,6 +244,7 @@
                         isTransitioning = true; animateToSlot(coin);
                     }
                 } else if (nextWordIndex > 0) {
+                    // ОШИБКА - 2.mp3
                     sndWrong.currentTime = 0; sndWrong.play();
                     flash.classList.add('shock-anim');
                     setTimeout(() => flash.classList.remove('shock-anim'), 400);
@@ -243,6 +256,7 @@
     }
 
     function animateToSlot(lastCoin) {
+        // СОБРАНА МОНЕТА - 3.mp3
         sndLevelComplete.currentTime = 0; sndLevelComplete.play();
         const slot = document.getElementById(`slot-${currentSentenceIndex}`);
         const sRect = slot.getBoundingClientRect();
@@ -260,10 +274,14 @@
 
         setTimeout(() => {
             flyer.remove();
-            slot.innerHTML = '<div class="artifact-coin" style="margin:5px auto"></div>';
+            slot.innerHTML = '<div class="artifact-coin" style="margin:0"></div>';
             currentSentenceIndex++;
             if (currentSentenceIndex < sentences.length) loadSentence();
-            else { sndVictory.play(); document.getElementById('victory-modal').style.display = 'block'; }
+            else { 
+                // ПОБЕДА - 4.mp3
+                sndVictory.play(); 
+                document.getElementById('victory-modal').style.display = 'block'; 
+            }
         }, 1000);
     }
 
@@ -285,6 +303,7 @@
         }
         requestAnimationFrame(draw);
     }
+    window.onresize = initGame;
     draw();
 </script>
 </body>
