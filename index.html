@@ -28,7 +28,7 @@
             transform: translate(-50%, -50%);
             animation: hoverFloat 2s ease-in-out infinite;
             transition: transform 0.1s ease-out;
-            display: none; /* Скрыт до начала игры */
+            display: none;
         }
         
         @keyframes hoverFloat {
@@ -36,27 +36,40 @@
             50% { margin-top: -10px; }
         }
 
+        /* Кнопка BEGIN */
+        #start-btn {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 20px 60px; font-size: 30px; cursor: pointer;
+            background: linear-gradient(#ffd700, #b8860b);
+            border: 3px solid #5c4306; color: #1a1403; border-radius: 8px;
+            font-family: 'Cinzel Decorative'; font-weight: bold;
+            z-index: 3000; transition: 0.3s;
+        }
+        #start-btn:hover { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 20px #ffd700; }
+
+        /* Бегунок громкости */
+        .volume-ctrl {
+            position: absolute; top: 20px; right: 20px;
+            z-index: 1100; display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.6); padding: 10px; border-radius: 20px;
+            border: 1px solid #ffd700;
+        }
+        input[type=range] {
+            cursor: pointer; accent-color: #ffd700; width: 100px;
+        }
+
         .word-tablet {
             position: absolute; min-width: 140px; padding: 12px;
             background: linear-gradient(135deg, #d4af37 0%, #ffd700 50%, #8a6d1c 100%);
-            border-top: 2px solid #fff3ad; border-left: 2px solid #fff3ad;
-            border-right: 4px solid #5c4306; border-bottom: 4px solid #5c4306;
-            border-radius: 6px; color: #1a1403; font-family: 'Philosopher', sans-serif;
+            border: 2px solid #fff3ad; border-radius: 6px; color: #1a1403;
             text-align: center; font-size: 24px; z-index: 300;
             box-shadow: 0 10px 20px rgba(0,0,0,0.7);
             display: flex; flex-direction: column; align-items: center;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
-        }
-
-        .word-tablet.hovered {
-            transform: scale(1.05) translateY(-5px);
-            box-shadow: 0 15px 35px rgba(255, 215, 0, 0.4);
         }
 
         .artifact-coin {
             width: 40px; height: 40px; margin-top: 8px;
             background: url('2.png') center/contain no-repeat;
-            transition: transform 0.4s, opacity 0.3s;
         }
         
         .active-coin { transform: scale(1.2) rotate(360deg); filter: brightness(1.3); }
@@ -66,15 +79,6 @@
             background: url('2.png') center/contain no-repeat;
             z-index: 3000; pointer-events: none;
             transition: all 1s cubic-bezier(0.6, -0.28, 0.735, 0.045);
-            filter: drop-shadow(0 0 15px #ffd700);
-        }
-
-        .shuffle-btn {
-            position: absolute; bottom: 30px; right: 30px;
-            padding: 12px 25px; background: linear-gradient(#ffd700, #b8860b);
-            border: 2px solid #5c4306; color: #1a1403; border-radius: 5px;
-            font-family: 'Cinzel Decorative'; font-weight: bold; cursor: pointer;
-            z-index: 1000;
         }
 
         #flash-effect {
@@ -88,68 +92,60 @@
             position: absolute; top: 25px; width: 100%;
             display: flex; flex-direction: column; align-items: center; z-index: 500;
         }
-        .slots { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 90%; }
+        .slots { display: flex; gap: 8px; justify-content: center; }
         .slot {
             width: 50px; height: 50px; border: 2px solid #ffd700;
-            background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
-            border-radius: 8px; transition: all 0.3s;
+            background: rgba(0,0,0,0.8); border-radius: 8px;
         }
-        .slot.highlight { transform: scale(1.2); box-shadow: 0 0 25px #ffd700; border-color: #fff; }
-        .slot .artifact-coin { width: 35px; height: 35px; margin-top: 0; animation: spin 4s linear infinite; }
-        @keyframes spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 
-        /* Модальные окна */
         .modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 450px; padding: 40px; background: radial-gradient(circle, #2c1f01 0%, #000 100%);
             border: 4px solid #ffd700; color: #ffd700; text-align: center;
-            z-index: 2000; display: none; opacity: 0; transition: 0.5s;
-        }
-        .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); display: block; }
-        
-        .btn-egypt {
-            margin-top:20px; padding:15px 30px; cursor:pointer; 
-            background:linear-gradient(#ffd700, #b8860b); border:none; 
-            font-family: 'Cinzel Decorative'; font-weight:bold; border-radius:4px;
-            color: #1a1403;
+            z-index: 4000; display: none;
         }
     </style>
 </head>
 <body>
+
+<button id="start-btn" onclick="startGame()">BEGIN</button>
+
+<div class="volume-ctrl">
+    <span style="color: #ffd700; font-size: 12px;">🔊</span>
+    <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume()">
+</div>
 
 <div id="scarab-cursor"></div>
 <canvas id="game-canvas"></canvas>
 <div id="flash-effect"></div>
 
 <div class="tomb">
-    <div id="start-modal" class="modal show" style="display: block;">
-        <h1 style="font-family:'Cinzel Decorative'; font-size: 30px;">The Pharaoh's Quest</h1>
-        <p style="font-size: 18px; color: #fff;">Collect 10 sacred artifacts to unlock the tomb's secrets.</p>
-        <button class="btn-egypt" onclick="startGame()">Begin Journey</button>
-    </div>
-
     <div id="ui-container" style="display: none;">
         <div class="ui-top">
             <div class="slots" id="slots-box"></div>
-            <p id="level-counter" style="color:#ffd700; letter-spacing:2px; font-size:14px; margin-top:10px;">Artifact 1 of 10</p>
+            <p id="level-counter" style="color:#ffd700; font-size:14px; margin-top:10px;">Artifact 1 of 10</p>
         </div>
         <div id="words-layer"></div>
-        <button class="shuffle-btn" onclick="shufflePositions()">Shuffle</button>
     </div>
 
     <div id="victory-modal" class="modal">
-        <h1 style="font-family:'Cinzel Decorative'; font-size: 40px;">Legendary!</h1>
-        <p style="font-size: 20px; color: #fff;">You have collected all 10 artifacts of the Pharaoh!</p>
-        <button class="btn-egypt" onclick="location.reload()">Play Again</button>
+        <h1 style="font-family:'Cinzel Decorative';">Legendary!</h1>
+        <p>All 10 artifacts collected!</p>
+        <button onclick="location.reload()" style="padding:10px 20px; cursor:pointer;">Play Again</button>
     </div>
 </div>
 
 <script>
-    // Аудио файлы
-    const sndCorrect = new Audio('1ncp3.mp3');
+    // Звуки
+    const sndCorrect = new Audio('1.mp3');
     const sndWrong = new Audio('2.mp3');
     const sndLevelComplete = new Audio('3.mp3');
     const sndVictory = new Audio('4.mp3');
+
+    function updateVolume() {
+        const val = document.getElementById('vol-slider').value;
+        [sndCorrect, sndWrong, sndLevelComplete, sndVictory].forEach(s => s.volume = val);
+    }
 
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
@@ -157,221 +153,139 @@
     const flash = document.getElementById('flash-effect');
     
     const sentences = [
-        ["Ra", "is", "the", "Sun", "God"],
-        ["The", "Solar", "Barque", "is", "golden"],
-        ["Khepri", "is", "a", "sacred", "scarab"],
-        ["The", "scarab", "rolls", "the", "Sun"],
-        ["Pyramids", "are", "filled", "with", "power"],
-        ["The", "Ankh", "gives", "eternal", "life"],
-        ["Apophis", "is", "the", "Great", "Serpent"],
-        ["His", "eyes", "burn", "like", "fire"],
-        ["The", "Serpent", "hates", "the", "light"],
-        ["Magic", "protects", "the", "ancient", "tomb"]
+        ["Ra", "is", "the", "Sun", "God"], ["The", "Solar", "Barque", "is", "golden"],
+        ["Khepri", "is", "a", "sacred", "scarab"], ["The", "scarab", "rolls", "the", "Sun"],
+        ["Pyramids", "are", "filled", "with", "power"], ["The", "Ankh", "gives", "eternal", "life"],
+        ["Apophis", "is", "the", "Great", "Serpent"], ["His", "eyes", "burn", "like", "fire"],
+        ["The", "Serpent", "hates", "the", "light"], ["Magic", "protects", "the", "ancient", "tomb"]
     ];
 
-    let currentSentenceIndex = 0;
-    let nextWordIndex = 0;
-    let activeCoins = [];
-    let mouseX = 0, mouseY = 0, lastX = 0;
-    let isTransitioning = false;
-    let gameStarted = false;
+    let currentSentenceIndex = 0, nextWordIndex = 0, activeCoins = [];
+    let mouseX = 0, mouseY = 0, lastX = 0, isTransitioning = false, gameStarted = false;
 
     function startGame() {
-        document.getElementById('start-modal').classList.remove('show');
-        setTimeout(() => {
-            document.getElementById('start-modal').style.display = 'none';
-            document.getElementById('ui-container').style.display = 'block';
-            scarab.style.display = 'block';
-            gameStarted = true;
-            initGame();
-        }, 500);
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('ui-container').style.display = 'block';
+        scarab.style.display = 'block';
+        gameStarted = true;
+        updateVolume();
+        initGame();
     }
 
     function initGame() {
-        updateCanvasSize();
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         const slotsBox = document.getElementById('slots-box');
         slotsBox.innerHTML = '';
         for(let i=0; i<sentences.length; i++) slotsBox.innerHTML += `<div class="slot" id="slot-${i}"></div>`;
         loadSentence();
     }
 
-    function updateCanvasSize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-
     function loadSentence() {
         if (currentSentenceIndex >= sentences.length) return;
         document.getElementById('level-counter').innerText = `Artifact ${currentSentenceIndex + 1} of 10`;
         const layer = document.getElementById('words-layer');
-        layer.innerHTML = '';
-        activeCoins = [];
-        nextWordIndex = 0;
-        isTransitioning = false;
+        layer.innerHTML = ''; activeCoins = []; nextWordIndex = 0; isTransitioning = false;
 
         const words = sentences[currentSentenceIndex];
-        const shuffledWords = [...words].sort(() => Math.random() - 0.5);
+        const shuffled = [...words].sort(() => Math.random() - 0.5);
 
-        const cols = 3;
-        const cellWidth = window.innerWidth / cols;
-        const cellHeight = (window.innerHeight - 280) / 2;
-
-        shuffledWords.forEach((word, index) => {
-            const col = index % cols;
-            const row = Math.floor(index / cols);
-            const x = (col * cellWidth) + (Math.random() * (cellWidth - 180)) + 40;
-            const y = (row * cellHeight) + (Math.random() * (cellHeight - 140)) + 220;
-
+        shuffled.forEach((word, index) => {
             const tab = document.createElement('div');
             tab.className = 'word-tablet';
-            tab.style.left = x + 'px';
-            tab.style.top = y + 'px';
+            tab.style.left = (Math.random() * (window.innerWidth - 200) + 50) + 'px';
+            tab.style.top = (Math.random() * (window.innerHeight - 300) + 200) + 'px';
             tab.innerHTML = `<span>${word}</span><div class="artifact-coin"></div>`;
             layer.appendChild(tab);
 
-            const coinEl = tab.querySelector('.artifact-coin');
             activeCoins.push({
                 text: word, targetIndex: words.indexOf(word),
-                el: coinEl, parentTab: tab, collected: false, x: 0, y: 0 
+                el: tab.querySelector('.artifact-coin'), parentTab: tab, collected: false
             });
         });
     }
 
-    function shufflePositions() { if(!isTransitioning && gameStarted) loadSentence(); }
-
     window.addEventListener('mousemove', (e) => {
         if (!gameStarted) return;
-        const deltaX = e.clientX - lastX;
-        const tilt = Math.min(Math.max(deltaX * 3, -30), 30);
+        const tilt = Math.min(Math.max((e.clientX - lastX) * 3, -30), 30);
         scarab.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
-        lastX = e.clientX;
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-        scarab.style.left = mouseX + 'px';
-        scarab.style.top = mouseY + 'px';
+        lastX = e.clientX; mouseX = e.clientX; mouseY = e.clientY;
+        scarab.style.left = mouseX + 'px'; scarab.style.top = mouseY + 'px';
         if (!isTransitioning) checkCollisions();
     });
 
     function checkCollisions() {
         activeCoins.forEach(coin => {
-            const dist = Math.hypot(mouseX - coin.x, mouseY - coin.y);
-            if (dist < 100) coin.parentTab.classList.add('hovered');
-            else coin.parentTab.classList.remove('hovered');
+            const rect = coin.el.getBoundingClientRect();
+            const cx = rect.left + rect.width/2;
+            const cy = rect.top + rect.height/2;
+            const dist = Math.hypot(mouseX - cx, mouseY - cy);
 
-            if (coin.collected) return;
-            if (dist < 40) {
+            if (dist < 100) coin.parentTab.style.transform = "scale(1.05)";
+            else coin.parentTab.style.transform = "scale(1)";
+
+            if (!coin.collected && dist < 40) {
                 if (coin.targetIndex === nextWordIndex) {
-                    // ПРАВИЛЬНОЕ КАСАНИЕ
-                    sndCorrect.currentTime = 0;
-                    sndCorrect.play();
-                    
-                    coin.collected = true;
-                    coin.el.classList.add('active-coin');
+                    sndCorrect.currentTime = 0; sndCorrect.play();
+                    coin.collected = true; coin.el.classList.add('active-coin');
                     nextWordIndex++;
-                    
                     if (nextWordIndex === sentences[currentSentenceIndex].length) {
-                        isTransitioning = true; 
-                        animateArtifactToSlot(coin);
+                        isTransitioning = true; animateToSlot(coin);
                     }
                 } else if (nextWordIndex > 0) {
-                    triggerError();
+                    sndWrong.currentTime = 0; sndWrong.play();
+                    flash.classList.add('shock-anim');
+                    setTimeout(() => flash.classList.remove('shock-anim'), 400);
+                    nextWordIndex = 0;
+                    activeCoins.forEach(c => { c.collected = false; c.el.classList.remove('active-coin'); });
                 }
             }
         });
     }
 
-    function triggerError() {
-        // НЕПРАВИЛЬНОЕ КАСАНИЕ
-        sndWrong.currentTime = 0;
-        sndWrong.play();
-
-        flash.classList.add('shock-anim');
-        setTimeout(() => flash.classList.remove('shock-anim'), 400);
-        nextWordIndex = 0;
-        activeCoins.forEach(c => { c.collected = false; c.el.classList.remove('active-coin'); });
-    }
-
-    function animateArtifactToSlot(lastCoin) {
-        // ЗВУК СОБРАННОГО ПРЕДЛОЖЕНИЯ (МОНЕТЫ)
-        sndLevelComplete.currentTime = 0;
-        sndLevelComplete.play();
-
+    function animateToSlot(lastCoin) {
+        sndLevelComplete.currentTime = 0; sndLevelComplete.play();
         const slot = document.getElementById(`slot-${currentSentenceIndex}`);
-        const slotRect = slot.getBoundingClientRect();
-        const coinRect = lastCoin.el.getBoundingClientRect();
+        const sRect = slot.getBoundingClientRect();
+        const cRect = lastCoin.el.getBoundingClientRect();
 
         const flyer = document.createElement('div');
         flyer.className = 'flying-artifact';
-        flyer.style.left = coinRect.left + 'px';
-        flyer.style.top = coinRect.top + 'px';
+        flyer.style.left = cRect.left + 'px'; flyer.style.top = cRect.top + 'px';
         document.body.appendChild(flyer);
 
-        lastCoin.el.style.opacity = '0';
-
         setTimeout(() => {
-            flyer.style.left = (slotRect.left + slotRect.width/2 - 22) + 'px';
-            flyer.style.top = (slotRect.top + slotRect.height/2 - 22) + 'px';
+            flyer.style.left = sRect.left + 'px'; flyer.style.top = sRect.top + 'px';
             flyer.style.transform = "scale(0.8) rotate(720deg)";
         }, 50);
 
         setTimeout(() => {
             flyer.remove();
-            slot.classList.add('highlight');
-            slot.innerHTML = '<div class="artifact-coin"></div>';
-            
-            setTimeout(() => {
-                slot.classList.remove('highlight');
-                currentSentenceIndex++;
-                if (currentSentenceIndex < sentences.length) {
-                    loadSentence();
-                } else {
-                    showVictory();
-                }
-            }, 500);
-        }, 1050);
-    }
-
-    function showVictory() {
-        // ЗВУК ПОБЕДЫ В КОНЦЕ
-        sndVictory.play();
-        
-        const m = document.getElementById('victory-modal');
-        m.style.display = 'block';
-        setTimeout(() => m.classList.add('show'), 50);
-        gameStarted = false;
-        scarab.style.display = 'none';
+            slot.innerHTML = '<div class="artifact-coin" style="margin:5px auto"></div>';
+            currentSentenceIndex++;
+            if (currentSentenceIndex < sentences.length) loadSentence();
+            else { sndVictory.play(); document.getElementById('victory-modal').style.display = 'block'; }
+        }, 1000);
     }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (!gameStarted) {
-            requestAnimationFrame(draw);
-            return;
-        }
-
-        activeCoins.forEach(coin => {
-            const rect = coin.el.getBoundingClientRect();
-            coin.x = rect.left + rect.width / 2;
-            coin.y = rect.top + rect.height / 2;
-        });
-
-        const collected = activeCoins.filter(c => c.collected).sort((a,b) => a.targetIndex - b.targetIndex);
-        if (collected.length > 0) {
-            ctx.beginPath();
-            ctx.moveTo(collected[0].x, collected[0].y);
-            for (let i = 1; i < collected.length; i++) ctx.lineTo(collected[i].x, collected[i].y);
-            if (!isTransitioning) ctx.lineTo(mouseX, mouseY);
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 5;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#ffd700';
-            ctx.stroke();
+        if (gameStarted) {
+            const collected = activeCoins.filter(c => c.collected).sort((a,b) => a.targetIndex - b.targetIndex);
+            if (collected.length > 0) {
+                ctx.beginPath();
+                const r0 = collected[0].el.getBoundingClientRect();
+                ctx.moveTo(r0.left + 20, r0.top + 20);
+                for (let i = 1; i < collected.length; i++) {
+                    const ri = collected[i].el.getBoundingClientRect();
+                    ctx.lineTo(ri.left + 20, ri.top + 20);
+                }
+                if (!isTransitioning) ctx.lineTo(mouseX, mouseY);
+                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 5; ctx.stroke();
+            }
         }
         requestAnimationFrame(draw);
     }
-
-    window.onresize = updateCanvasSize;
-    draw(); 
+    draw();
 </script>
 </body>
 </html>
