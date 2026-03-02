@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Luxor: 10 Artifacts Quest (Junior Friendly)</title>
+    <title>Luxor: 10 Artifacts Quest</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Philosopher&display=swap');
 
@@ -28,7 +28,9 @@
             transform: translate(-50%, -50%);
             animation: hoverFloat 2s ease-in-out infinite;
             transition: transform 0.1s ease-out;
+            display: none; /* Скрыт до начала игры */
         }
+        
         @keyframes hoverFloat {
             0%, 100% { margin-top: 0px; }
             50% { margin-top: -10px; }
@@ -44,7 +46,6 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.7);
             display: flex; flex-direction: column; align-items: center;
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
-            /* УБРАН text-transform: uppercase */
         }
 
         .word-tablet.hovered {
@@ -97,13 +98,21 @@
         .slot .artifact-coin { width: 35px; height: 35px; margin-top: 0; animation: spin 4s linear infinite; }
         @keyframes spin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 
-        #victory-modal {
+        /* Модальные окна */
+        .modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
             width: 450px; padding: 40px; background: radial-gradient(circle, #2c1f01 0%, #000 100%);
             border: 4px solid #ffd700; color: #ffd700; text-align: center;
             z-index: 2000; display: none; opacity: 0; transition: 0.5s;
         }
-        #victory-modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); display: block; }
+        .modal.show { opacity: 1; transform: translate(-50%, -50%) scale(1); display: block; }
+        
+        .btn-egypt {
+            margin-top:20px; padding:15px 30px; cursor:pointer; 
+            background:linear-gradient(#ffd700, #b8860b); border:none; 
+            font-family: 'Cinzel Decorative'; font-weight:bold; border-radius:4px;
+            color: #1a1403;
+        }
     </style>
 </head>
 <body>
@@ -113,39 +122,51 @@
 <div id="flash-effect"></div>
 
 <div class="tomb">
-    <div class="ui-top">
-        <div class="slots" id="slots-box"></div>
-        <p id="level-counter" style="color:#ffd700; letter-spacing:2px; font-size:14px; margin-top:10px;">Artifact 1 of 10</p>
+    <div id="start-modal" class="modal show" style="display: block;">
+        <h1 style="font-family:'Cinzel Decorative'; font-size: 30px;">The Pharaoh's Quest</h1>
+        <p style="font-size: 18px; color: #fff;">Collect 10 sacred artifacts to unlock the tomb's secrets.</p>
+        <button class="btn-egypt" onclick="startGame()">Begin Journey</button>
     </div>
 
-    <div id="words-layer"></div>
-    <button class="shuffle-btn" onclick="shufflePositions()">Shuffle</button>
+    <div id="ui-container" style="display: none;">
+        <div class="ui-top">
+            <div class="slots" id="slots-box"></div>
+            <p id="level-counter" style="color:#ffd700; letter-spacing:2px; font-size:14px; margin-top:10px;">Artifact 1 of 10</p>
+        </div>
+        <div id="words-layer"></div>
+        <button class="shuffle-btn" onclick="shufflePositions()">Shuffle</button>
+    </div>
 
-    <div id="victory-modal">
+    <div id="victory-modal" class="modal">
         <h1 style="font-family:'Cinzel Decorative'; font-size: 40px;">Legendary!</h1>
         <p style="font-size: 20px; color: #fff;">You have collected all 10 artifacts of the Pharaoh!</p>
-        <button onclick="location.reload()" style="margin-top:20px; padding:15px 30px; cursor:pointer; background:linear-gradient(#ffd700, #b8860b); border:none; font-family: 'Cinzel Decorative'; font-weight:bold; border-radius:4px;">Play Again</button>
+        <button class="btn-egypt" onclick="location.reload()">Play Again</button>
     </div>
 </div>
 
 <script>
+    // Аудио файлы
+    const sndCorrect = new Audio('1ncp3.mp3');
+    const sndWrong = new Audio('2.mp3');
+    const sndLevelComplete = new Audio('3.mp3');
+    const sndVictory = new Audio('4.mp3');
+
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
     const scarab = document.getElementById('scarab-cursor');
     const flash = document.getElementById('flash-effect');
     
-    // ПРЕДЛОЖЕНИЯ БЕЗ КАПСА
     const sentences = [
-    ["Ra", "is", "the", "Sun", "God"],
-    ["The", "Solar", "Barque", "is", "golden"],
-    ["Khepri", "is", "a", "sacred", "scarab"],
-    ["The", "scarab", "rolls", "the", "Sun"],
-    ["Pyramids", "are", "filled", "with", "power"],
-    ["The", "Ankh", "gives", "eternal", "life"],
-    ["Apophis", "is", "the", "Great", "Serpent"],
-    ["His", "eyes", "burn", "like", "fire"],
-    ["The", "Serpent", "hates", "the", "light"],
-    ["Magic", "protects", "the", "ancient", "tomb"]
+        ["Ra", "is", "the", "Sun", "God"],
+        ["The", "Solar", "Barque", "is", "golden"],
+        ["Khepri", "is", "a", "sacred", "scarab"],
+        ["The", "scarab", "rolls", "the", "Sun"],
+        ["Pyramids", "are", "filled", "with", "power"],
+        ["The", "Ankh", "gives", "eternal", "life"],
+        ["Apophis", "is", "the", "Great", "Serpent"],
+        ["His", "eyes", "burn", "like", "fire"],
+        ["The", "Serpent", "hates", "the", "light"],
+        ["Magic", "protects", "the", "ancient", "tomb"]
     ];
 
     let currentSentenceIndex = 0;
@@ -153,6 +174,18 @@
     let activeCoins = [];
     let mouseX = 0, mouseY = 0, lastX = 0;
     let isTransitioning = false;
+    let gameStarted = false;
+
+    function startGame() {
+        document.getElementById('start-modal').classList.remove('show');
+        setTimeout(() => {
+            document.getElementById('start-modal').style.display = 'none';
+            document.getElementById('ui-container').style.display = 'block';
+            scarab.style.display = 'block';
+            gameStarted = true;
+            initGame();
+        }, 500);
+    }
 
     function initGame() {
         updateCanvasSize();
@@ -204,9 +237,10 @@
         });
     }
 
-    function shufflePositions() { if(!isTransitioning) loadSentence(); }
+    function shufflePositions() { if(!isTransitioning && gameStarted) loadSentence(); }
 
     window.addEventListener('mousemove', (e) => {
+        if (!gameStarted) return;
         const deltaX = e.clientX - lastX;
         const tilt = Math.min(Math.max(deltaX * 3, -30), 30);
         scarab.style.transform = `translate(-50%, -50%) rotate(${tilt}deg)`;
@@ -227,9 +261,14 @@
             if (coin.collected) return;
             if (dist < 40) {
                 if (coin.targetIndex === nextWordIndex) {
+                    // ПРАВИЛЬНОЕ КАСАНИЕ
+                    sndCorrect.currentTime = 0;
+                    sndCorrect.play();
+                    
                     coin.collected = true;
                     coin.el.classList.add('active-coin');
                     nextWordIndex++;
+                    
                     if (nextWordIndex === sentences[currentSentenceIndex].length) {
                         isTransitioning = true; 
                         animateArtifactToSlot(coin);
@@ -242,6 +281,10 @@
     }
 
     function triggerError() {
+        // НЕПРАВИЛЬНОЕ КАСАНИЕ
+        sndWrong.currentTime = 0;
+        sndWrong.play();
+
         flash.classList.add('shock-anim');
         setTimeout(() => flash.classList.remove('shock-anim'), 400);
         nextWordIndex = 0;
@@ -249,6 +292,10 @@
     }
 
     function animateArtifactToSlot(lastCoin) {
+        // ЗВУК СОБРАННОГО ПРЕДЛОЖЕНИЯ (МОНЕТЫ)
+        sndLevelComplete.currentTime = 0;
+        sndLevelComplete.play();
+
         const slot = document.getElementById(`slot-${currentSentenceIndex}`);
         const slotRect = slot.getBoundingClientRect();
         const coinRect = lastCoin.el.getBoundingClientRect();
@@ -278,16 +325,30 @@
                 if (currentSentenceIndex < sentences.length) {
                     loadSentence();
                 } else {
-                    const m = document.getElementById('victory-modal');
-                    m.style.display = 'block';
-                    setTimeout(() => m.classList.add('show'), 50);
+                    showVictory();
                 }
             }, 500);
         }, 1050);
     }
 
+    function showVictory() {
+        // ЗВУК ПОБЕДЫ В КОНЦЕ
+        sndVictory.play();
+        
+        const m = document.getElementById('victory-modal');
+        m.style.display = 'block';
+        setTimeout(() => m.classList.add('show'), 50);
+        gameStarted = false;
+        scarab.style.display = 'none';
+    }
+
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!gameStarted) {
+            requestAnimationFrame(draw);
+            return;
+        }
+
         activeCoins.forEach(coin => {
             const rect = coin.el.getBoundingClientRect();
             coin.x = rect.left + rect.width / 2;
@@ -309,7 +370,6 @@
         requestAnimationFrame(draw);
     }
 
-    window.onload = initGame;
     window.onresize = updateCanvasSize;
     draw(); 
 </script>
