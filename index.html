@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Luxor: Ancient Magic Coins for Scarab</title>
+    <title>Luxor: Ancient Magic Coins</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Philosopher&display=swap');
 
@@ -46,11 +46,11 @@
 
         .volume-ctrl {
             position: absolute; top: 20px; right: 20px;
-            z-index: 1100; display: flex; align-items: center; gap: 10px;
-            background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 30px;
-            border: 2px solid #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            z-index: 2000; display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.8); padding: 12px 20px; border-radius: 30px;
+            border: 2px solid #ffd700; pointer-events: auto;
         }
-        input[type=range] { cursor: pointer; accent-color: #ffd700; width: 120px; }
+        input[type=range] { cursor: pointer; accent-color: #ffd700; width: 130px; vertical-align: middle; }
 
         .word-tablet {
             position: absolute; width: 180px; padding: 12px;
@@ -59,7 +59,7 @@
             text-align: center; font-size: 24px; z-index: 300;
             box-shadow: 0 10px 20px rgba(0,0,0,0.7);
             display: flex; flex-direction: column; align-items: center;
-            box-sizing: border-box; transition: transform 0.2s;
+            box-sizing: border-box; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .artifact-coin {
@@ -68,10 +68,9 @@
             filter: drop-shadow(0 0 5px rgba(255,215,0,0.5));
         }
         
-        /* Анимация вращения монетки при активации */
         .active-coin {
-            animation: coinSpin 1s linear infinite;
-            filter: brightness(1.2) drop-shadow(0 0 10px #ffd700);
+            animation: coinSpin 1.2s linear infinite;
+            filter: brightness(1.2) drop-shadow(0 0 12px #ffd700);
         }
 
         @keyframes coinSpin {
@@ -83,7 +82,7 @@
             position: fixed; width: 50px; height: 50px;
             background: url('2.png') center/contain no-repeat;
             z-index: 3000; pointer-events: none;
-            animation: coinSpin 0.5s linear infinite;
+            animation: coinSpin 0.6s linear infinite;
             transition: all 1s cubic-bezier(0.6, -0.28, 0.735, 0.045);
         }
 
@@ -112,13 +111,13 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <button id="start-btn" onclick="startGame()">BEGIN</button>
 
-<div class="volume-ctrl">
-    <span style="color: #ffd700; font-size: 14px;">🔊</span>
-    <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="0.5">
+<div class="volume-ctrl" onmouseover="this.style.cursor='default'">
+    <span style="color: #ffd700; font-size: 18px;">🔊</span>
+    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5" oninput="changeVol(this.value)">
 </div>
 
 <div id="scarab-cursor"></div>
@@ -146,16 +145,12 @@
     const sndWrong = new Audio('2.mp3');
     const sndLevelComplete = new Audio('3.mp3');
     const sndVictory = new Audio('4.mp3');
-    const allSounds = [sndCorrect, sndWrong, sndLevelComplete, sndVictory];
+    const playlist = [sndCorrect, sndWrong, sndLevelComplete, sndVictory];
 
-    const volSlider = document.getElementById('vol-slider');
-    
-    // Функция управления громкостью
-    function updateVolume() {
-        const val = volSlider.value;
-        allSounds.forEach(s => s.volume = val);
+    // Глобальная функция смены громкости (теперь точно работает)
+    function changeVol(v) {
+        playlist.forEach(s => { s.volume = v; });
     }
-    volSlider.addEventListener('input', updateVolume);
 
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d');
@@ -178,7 +173,7 @@
         document.getElementById('ui-container').style.display = 'block';
         scarab.style.display = 'block';
         gameStarted = true;
-        updateVolume(); // Применяем громкость сразу при старте
+        changeVol(document.getElementById('vol-slider').value);
         initGame();
     }
 
@@ -190,7 +185,7 @@
         loadSentence();
     }
 
-function loadSentence() {
+    function loadSentence() {
         if (currentSentenceIndex >= sentences.length) return;
         document.getElementById('level-counter').innerText = `Ancient Magic Coin ${currentSentenceIndex + 1} of 10`;
         const layer = document.getElementById('words-layer');
@@ -212,24 +207,17 @@ function loadSentence() {
             const col = cellIndex % cols;
             const row = Math.floor(cellIndex / cols);
             
-            // Вносим хаос:
-            const jitterX = (Math.random() - 0.5) * 80; // Смещение по горизонтали
-            const jitterY = (Math.random() - 0.5) * 60; // Смещение по вертикали
-            const randomRotate = (Math.random() - 0.5) * 10; // Наклон от -5 до 5 градусов
+            // "Хаотичность" — случайное смещение и поворот
+            const jitterX = (Math.random() - 0.5) * 70;
+            const jitterY = (Math.random() - 0.5) * 50;
+            const randRot = (Math.random() - 0.5) * 12;
 
             const tab = document.createElement('div');
             tab.className = 'word-tablet';
-            
-            // Базовая позиция в центре ячейки + наш хаос
-            const finalX = (marginX + (col * cellW) + (cellW / 2) - 90) + jitterX;
-            const finalY = (marginY + (row * cellH) + (cellH / 2) - 40) + jitterY;
-            
-            tab.style.left = finalX + 'px';
-            tab.style.top = finalY + 'px';
-            tab.style.transform = `rotate(${randomRotate}deg)`; // Применяем наклон
-            
-            // Сохраняем базовый наклон, чтобы при наведении он не сбрасывался
-            tab.dataset.baseRotation = randomRotate;
+            tab.style.left = (marginX + (col * cellW) + (cellW / 2) - 90 + jitterX) + 'px';
+            tab.style.top = (marginY + (row * cellH) + (cellH / 2) - 40 + jitterY) + 'px';
+            tab.style.transform = `rotate(${randRot}deg)`;
+            tab.dataset.baseRot = randRot;
 
             tab.innerHTML = `<span>${word}</span><div class="artifact-coin"></div>`;
             layer.appendChild(tab);
@@ -256,20 +244,16 @@ function loadSentence() {
             const cx = rect.left + rect.width/2;
             const cy = rect.top + rect.height/2;
             const dist = Math.hypot(mouseX - cx, mouseY - cy);
+            const baseRot = coin.parentTab.dataset.baseRot;
 
-        if (dist < 100) {
-        const rot = coin.parentTab.dataset.baseRotation;
-        coin.parentTab.style.transform = `scale(1.08) translateY(-5px) rotate(${rot}deg)`;
-    } else {
-        const rot = coin.parentTab.dataset.baseRotation;
-        coin.parentTab.style.transform = `scale(1) rotate(${rot}deg)`;
-    }
+            if (dist < 100) coin.parentTab.style.transform = `scale(1.1) translateY(-8px) rotate(${baseRot}deg)`;
+            else coin.parentTab.style.transform = `scale(1) rotate(${baseRot}deg)`;
 
             if (!coin.collected && dist < 40) {
                 if (coin.targetIndex === nextWordIndex) {
                     sndCorrect.currentTime = 0; sndCorrect.play();
                     coin.collected = true; 
-                    coin.el.classList.add('active-coin'); // Запускаем вращение
+                    coin.el.classList.add('active-coin');
                     nextWordIndex++;
                     if (nextWordIndex === sentences[currentSentenceIndex].length) {
                         isTransitioning = true; 
@@ -328,8 +312,9 @@ function loadSentence() {
                     ctx.lineTo(ri.left + 22, ri.top + 22);
                 }
                 if (!isTransitioning) ctx.lineTo(mouseX, mouseY);
-                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 5;
+                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 6;
                 ctx.shadowBlur = 15; ctx.shadowColor = '#ffd700';
+                ctx.lineCap = 'round';
                 ctx.stroke();
             }
         }
